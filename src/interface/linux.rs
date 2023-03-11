@@ -41,6 +41,25 @@ mod tests {
     }
 }
 
+// The async code that returns everything correctly:
+//
+// async fn get_addresses() {
+//     use futures::stream::TryStreamExt;
+
+//     let (conn, handle, _) = rtnetlink::new_connection().unwrap();
+//     let task = tokio::spawn(conn);
+//     // let mut links = handle.link().get().execute();
+//     // while let Some(msg) = links.try_next().await? {
+//     //     let mut addrs = handle.address().get().execute();
+//     // }
+//     let mut addrs = handle.address().get().execute();
+//     while let Some(msg) = addrs.try_next().await.unwrap() {
+//         println!("{msg:?}");
+//     }
+//     task.abort();
+//     task.await.ok();
+// }
+
 pub fn get_interface_type(if_name: String) -> InterfaceType {
     let if_type_path: String = format!("/sys/class/net/{}/type", if_name);
     let r = read_to_string(if_type_path);
