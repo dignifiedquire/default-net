@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{Buf, BytesMut};
 use netlink_packet_core::{NetlinkMessage, NetlinkPayload, NLM_F_DUMP, NLM_F_REQUEST};
 use netlink_packet_route::{AddressMessage, RtnlMessage};
 use netlink_sys::constants::NETLINK_ROUTE;
@@ -20,14 +20,22 @@ fn interfaces_netlink() {
     let n = socket.send_to(&buf, &addr, 0).unwrap();
     assert_eq!(n, req.header.length as usize);
     let mut buf = BytesMut::with_capacity(4096);
-    loop {
+    'msg_loop: loop {
         let (n, addr) = socket.recv_from(&mut buf, 0).unwrap();
-        let packet = NetlinkMessage::<RtnlMessage>::deserialize(&buf).unwrap();
-        println!("{packet:?}");
-        buf.clear();
-        if matches!(packet.payload, NetlinkPayload::Done) {
-            break;
+        while !buf.is_empty() {
+            let packet = NetlinkMessage::<RtnlMessage>::deserialize(&buf).unwrap();
+            println!("{packet:?}");
+            println!(
+                "n: {n}, packet: {}, buf: {}",
+                packet.header.length,
+                buf.len()
+            );
+            buf.advance(packet.header.length as usize);
+            if matches!(packet.payload, NetlinkPayload::Done) {
+                break 'msg_loop;
+            }
         }
+        buf.clear();
     }
 }
 
